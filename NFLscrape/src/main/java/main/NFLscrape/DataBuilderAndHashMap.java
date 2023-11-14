@@ -307,13 +307,23 @@ public class DataBuilderAndHashMap {
 				" <b>");
 
 		String vegasLine = Helpers.extractStringBetween(s,
-				"<th scope=\"row\" class=\"center \" data-stat=\"info\">Vegas Line</th><td class=\"center \" data-stat=\"stat\">",
-				"/td></tr>");
+				"Vegas Line</th><td class=\"center \" data-stat=\"stat\" >",
+				"</td></tr>");
 
+		String awayTeamName = doc.getElementById("all_vis_starters").selectFirst("h2").text().replace(" Starters", "");
+		String homeTeamName = doc.getElementById("all_home_starters").selectFirst("h2").text().replace(" Starters", "");
+		int moneylineWinner = -1;
+		if(vegasLine.contains(homeTeamName))
+			moneylineWinner = 1; //means home team won //System.out.println("home moneyline winner");
+		else if(vegasLine.contains(awayTeamName))
+			moneylineWinner = 0;//System.out.println("away moneyline winner");
+		
+		
 		ret.add(roof);
 		ret.add(surface);
 		ret.add(overUnder);
 		ret.add(vegasLine);
+		ret.add(""+moneylineWinner);
 
 		return ret;
 	}
