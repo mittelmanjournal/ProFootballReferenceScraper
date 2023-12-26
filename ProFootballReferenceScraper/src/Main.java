@@ -6,11 +6,15 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 
 public class Main {
 	public static long INTER_GAME_DELAY;
 	
 	public static void main(String[] args) {
+		HashMap<String, HashMap<String, List<String>>> pidToGidsToStats = new HashMap<String, HashMap<String, List<String>>>();
 		BufferedWriter validWriter = null;
 		BufferedWriter invalidWriter = null;
 		try {
@@ -24,10 +28,9 @@ public class Main {
 		// Specify the file path you want to read
 		ArrayList<Game> games = new ArrayList<Game>();
 		int x = 0;
-		for (int i = 2; i <= 23; i++) {
+		for (int i = 2; i <= 15; i++) {
 			String filePath = "games_year/games_" + (2000 + i) + ".txt";
 			
-				
 			try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
 				String link;
 				
@@ -43,37 +46,35 @@ public class Main {
 						validWriter.newLine();
 					} else if (games.get(x).toString(":%%:").contains("null")){
 						//write it's link to invalid file
+						System.out.println("Invalid successfully entered, SHOULD BE WRITING: " + games.get(x).getID() + " to invalid text file");
 						invalidWriter.write(games.get(x).getID());
 						invalidWriter.newLine();
 					}
-					//update hashmap based on what this game object scraped whether or not its valid or invalid
+					for(List<String> als : games.get(x).getAllPlayerData()) {
+						
+						if(!pidToGidsToStats.containsKey(als.get(0))) {
+							pidToGidsToStats.put(als.get(0), new HashMap<String, List<String>>());
+						}
+						pidToGidsToStats.get(als.get(0)).put(games.get(x).getID(), als.subList(1, als.size()));//this line is only valid because we can assume that we will never see the same gameID in our traversal
+					}
 					//rewrite the updated hashmap to a file that tracks it
+					
+					BufferedWriter hashmapWriter = null;
+					try {
+						hashmapWriter = new BufferedWriter(new FileWriter("hashmapData.txt"));
+					} catch (IOException e2) {
+						e2.printStackTrace();
+					}
+					hashmapWriter.write(pidToGidsToStats.toString());
+					hashmapWriter.close();
+					
 					System.out.println(games.get(x).toString(":%%:"));
+					//System.out.println(pidToGidsToStats.toString());
 					System.out.println();
-					x++;
-					
-					//TO GET TIME FROM HERE
-					//and do the time to delay given by game constructor subtracted by time above
-					
-					//I want to have the ability to start at a specific game in the iteration
-					
-					//DONE - set the id before creating the document in the game class
-					//- create the player stat line class 
-					//- create the player id string to player stat line object hashmap *NOTE coaches will only have historical data included
-					//UNNEEDED - whenever invalid position acronym seen take note of it
-					//DONE - change the to string of a game object to something simpler on one line so that you can turn it into a game object
-					//DONE - add a method that takes in a string and creates a game object from it
-					//DONE- write all valid games to one file and all invalid games to another file
-					//- write the hashmap of link to box score data object in a file after each game object construction
-					//DONE - check to see that if the position string contains a "/" because it is formatted "FB/TE" likeso, just get the String before the "/"
-					
-					//after doing all above, you will have all of the game relevant data saved
-					//meaning that you won't have to go over any of the pages any more for the valid Game objects.
-					//This can allow us to construct from the notepad each game object and the only other data we need
-					//beyond this point is each starter's historic seasonal data.
+					x++;	
 				}
 
-			} catch (IOException | InterruptedException e) {
+			} catch (IOException | InterruptedException | NullPointerException e) {
 				e.printStackTrace();
 				try {
 					validWriter.close();
