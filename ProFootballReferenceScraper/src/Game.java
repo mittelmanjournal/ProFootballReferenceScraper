@@ -111,6 +111,8 @@ public class Game {
 	
 	List<List<String>> allPlayerGameData = new ArrayList<List<String>>();
 		
+	String invalidPosition;
+	
 	//Behaviors/Methods and Constructor(s)
 	
 	//validity methods:
@@ -174,6 +176,7 @@ public class Game {
 
 			if (!isCurPosVal) {
 				System.out.println("Invalid pos found "+acr);
+				invalidPosition = acr;
 				break;
 			}
 
@@ -273,11 +276,12 @@ public class Game {
 		long timeConsumed = endTime - startTime;
 		
 		//get time needed to delay to keep speed optimal
-		if(2000 - timeConsumed <= 0) {
-			Main.INTER_GAME_DELAY = 2000;
-		} else {
-			Main.INTER_GAME_DELAY = 2000 - timeConsumed;
-		}
+		Main.GAME_TIME_USED = timeConsumed;
+//		if(2000 - timeConsumed <= 0) {
+//			Main.INTER_GAME_DELAY = 2000;
+//		} else {
+//			Main.INTER_GAME_DELAY = 2000 - timeConsumed;
+//		}
 		
 	}
 	
