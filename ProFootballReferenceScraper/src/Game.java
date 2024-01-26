@@ -113,6 +113,9 @@ public class Game {
 		
 	String invalidPosition;
 	
+	private String visKickerID;
+	private String homeKickerID;
+	
 	//Behaviors/Methods and Constructor(s)
 	
 	//validity methods:
@@ -121,15 +124,16 @@ public class Game {
 		boolean validity = true;
 		
 		Document checkVisStartersValidity = Jsoup.parse(doc.selectFirst("#all_vis_starters").html().replace("<!--\n", "").replace("\n-->", ""));
-		if(checkVisStartersValidity.selectFirst("tbody").selectFirst("tr:has(td[data-stat=pos]:empty)") != null){
+		if(checkVisStartersValidity.selectFirst("tbody").selectFirst("tr:has(td[data-stat=pos]:empty)") != null || checkVisStartersValidity.selectFirst("tbody").selectFirst("tr:has(td[data-stat=pos]:contains(QB))") == null){
 			validity = false;
 		}
 		
 		Document checkHomeStartersValidity = Jsoup.parse(doc.selectFirst("#all_home_starters").html().replace("<!--\n", "").replace("\n-->", ""));
-		if(checkHomeStartersValidity.selectFirst("tbody").selectFirst("tr:has(td[data-stat=pos]:empty)") != null){
+		if(checkHomeStartersValidity.selectFirst("tbody").selectFirst("tr:has(td[data-stat=pos]:empty)") != null || checkHomeStartersValidity.selectFirst("tbody").selectFirst("tr:has(td[data-stat=pos]:contains(QB))") == null){
 			validity = false;
 		}
 		
+		invalidPosition = "{Empty position OR absent QB OR not enough Runceivers (6 O-Line starters)}";
 		return validity;	
 	}
 	
@@ -138,7 +142,7 @@ public class Game {
 	 * @param doc
 	 * @return
 	 */
-	private boolean arePosAcronymsValid(Document doc) {
+	private boolean arePosAcronymsValid(Document doc, String[] validAcronyms) {
 		//go through each position acronym and if any exist that aren't part of the valid ones, return false
 		Document visitor = Jsoup
 				.parse(doc.selectFirst("#all_vis_starters").html().replace("<!--\n", "").replace("\n-->", ""));
@@ -157,8 +161,7 @@ public class Game {
 		
 		if (curPosAcronyms.length != 44 || !qbCheck.contains("QB"))
 			return false;
-		String[] validAcronyms = "QB Z X RB HB TB FB LH RH BB B WB WR RWR LWR FL TE SE RE LE DL LDE DE LDT DT NT UT MG DG RDT RDE JLB LOLB RUSH OLB BLB LLB LILB WILL ILB SLB MLB MIKE WLB RILB RLB ROLB SAM LB LCB CB RCB SS FS LDH RDH S RS DB END OL LT LOT T LG G C RG RT ROT"
-				.split(" ");
+		
 		boolean isCurPosVal = false;
 		for (String acr : curPosAcronyms) {
 			if(acr.contains("/")) { // sometimes this String is formatted like this: "FB/TE"
@@ -218,10 +221,14 @@ public class Game {
 		homeRID = infoArr[22].replace("[", "").replace("]", "").split(",");;
 		homeDID = infoArr[23].replace("[", "").replace("]", "").split(",");;
 		//make a function to get the box score data and update main hashmap
+		visKickerID = infoArr[24];
+		homeKickerID = infoArr[25];
 	}
 	
 	public Game(String link) {
 		ID = link.substring(49, 61);
+		String validOffenseAcronyms = "XR 87 X-WR TR FB' H-B F 0 Z X RB HB TB FB LH RH BB B WB WR RWR LWR FL TE SE";
+		String validDefenseAcronyms = "SCB 3CB ILN E ` NLB NCB WE CB-KR XDB OE XS 0LB XCB H D RDB LDB NE 33 MCB MOLB MILB TED MO FSW WIL ILBV 2 NB ROV DS WC NG RC JACK RE LE DL LDE DE LDT NDB DT NT UT MG DG RDT RDE END JLB LOLB RUSH BLB OLB LLB LILB WILL ILB SLB MLB MIKE WLB RILB RLB ROLB SAM LB LCB CB RCB SS FS LDH RDH S RS DB SAF";
 		//connect to link	
 		Document gamePage = null;
 		try {
@@ -234,7 +241,7 @@ public class Game {
 		long startTime = System.currentTimeMillis();
 
 		// set all of the values above if this game is valid
-		if (areStartersValid(gamePage) && arePosAcronymsValid(gamePage)) { //TODO the only things that need to be valid are parameters to the NN, meaning OU doesn't have to be valid
+		if (areStartersValid(gamePage) && arePosAcronymsValid(gamePage, ("QB OL LT LOT T LG G C RG RT ROT OT OG OC 63 " + validOffenseAcronyms + " " + validDefenseAcronyms).split(" "))) { //TODO the only things that need to be valid are parameters to the NN, meaning OU doesn't have to be valid
 			
 			week = getWeekFromDoc(gamePage);
 			// year is set in Main class
@@ -252,11 +259,11 @@ public class Game {
 			// the datapoint, we want the record to be before the game, make sure the
 			// getRecord function works accordingly
 			visSeasonRec = getRecordFromDoc(gamePage, "vis");
-
+			
 			visCoachID = getCoachIDFromDoc(gamePage, "vis");
 			visQBID = getQBIDFromDoc(gamePage, "vis");
-			visRID = getPosIDsFromDoc(gamePage, "vis", new String[] {"Z", "X", "RB", "HB", "TB", "FB", "LH", "RH", "BB", "B", "WB", "WR", "RWR", "LWR", "FL", "TE", "SE"}, visRID.length);
-			visDID = getPosIDsFromDoc(gamePage,"vis", "RE LE DL LDE DE LDT DT NT UT MG DG RDT RDE END JLB LOLB RUSH BLB OLB LLB LILB WILL ILB SLB MLB MIKE WLB RILB RLB ROLB SAM LB LCB CB RCB SS FS LDH RDH S RS DB".split(" "), visDID.length);
+			visRID = getPosIDsFromDoc(gamePage, "vis", validOffenseAcronyms.split(" "), visRID.length);
+			visDID = getPosIDsFromDoc(gamePage,"vis", validDefenseAcronyms.split(" "), visDID.length);
 			
 			homeName = getFullTeamNameFromDoc(gamePage, "home");
 			homeScore = getScoreFromDoc(gamePage, "home");
@@ -264,8 +271,8 @@ public class Game {
 			
 			homeCoachID = getCoachIDFromDoc(gamePage, "home");
 			homeQBID = getQBIDFromDoc(gamePage, "home");
-			homeRID = getPosIDsFromDoc(gamePage, "home", new String[] {"Z", "X", "RB", "HB", "TB", "FB", "LH", "RH", "BB", "B", "WB", "WR", "RWR", "LWR", "FL", "TE", "SE"}, homeRID.length);
-			homeDID = getPosIDsFromDoc(gamePage, "home", "RE LE DL LDE DE LDT DT NT UT MG DG RDT RDE END JLB LOLB RUSH BLB OLB LLB LILB WILL ILB SLB MLB MIKE WLB RILB RLB ROLB SAM LB LCB CB RCB SS FS LDH RDH S RS DB".split(" "), homeDID.length);
+			homeRID = getPosIDsFromDoc(gamePage, "home", validOffenseAcronyms.split(" "), homeRID.length);
+			homeDID = getPosIDsFromDoc(gamePage, "home", validDefenseAcronyms.split(" "), homeDID.length);
 		
 			allPlayerGameData = getAllStatlinesFromDoc(gamePage);
 		}
@@ -296,6 +303,27 @@ public class Game {
 		return ID;
 	}
 	
+	public List<String> getAllStartersIDs(){
+		List<String> ret = new ArrayList<String>();
+		ret.add(visQBID);
+		ret.addAll(Arrays.asList(visRID));
+		ret.addAll(Arrays.asList(visDID));
+		ret.add(homeQBID);
+		ret.addAll(Arrays.asList(homeRID));
+		ret.addAll(Arrays.asList(homeDID));
+		ret.add(visKickerID);
+		ret.add(homeKickerID);
+		return ret;
+	}
+	
+	public String getVisCoachID() {
+		return visCoachID;
+	}
+	
+	public String getHomeCoachID() {
+		return homeCoachID;
+	}
+	
 	//there is no setWeek() because I won't ever need to change the week outside of this class
 	public int getWeek() {
 		return week;
@@ -315,13 +343,31 @@ public class Game {
 	//Getters from HTML document to build object in constructor
 
 	private static int getWeekFromDoc(Document doc) {
-		// Assuming doc is a gamePage
-		String weekHTML = doc.select("#all_other_scores").html();
-		Document tempDoc = Jsoup.parse(weekHTML.replace("<!--     ", "\n").replace("-->", "").trim());
-		String weekString = tempDoc.select("h2").text();
-		String temp[] = weekString.split(" ");
+		try {
 
-		return Integer.parseInt(temp[temp.length - 1]);
+			// Assuming doc is a gamePage
+			String weekHTML = doc.select("#all_other_scores").html();
+			Document tempDoc = Jsoup.parse(weekHTML.replace("<!--     ", "\n").replace("-->", "").trim());
+			String weekString = tempDoc.select("h2").text();
+			String temp[] = weekString.split(" ");
+
+			return Integer.parseInt(temp[temp.length - 1]);
+		} catch (Exception e) {
+			String playoffRound = doc.selectFirst("h1").text().split(" ")[0];
+			switch (playoffRound) {
+			case "Wild":
+				return 18;
+			case "Divisional":
+				return 19;
+			case "NFC":
+				return 20;
+			case "AFC":
+				return 20;
+			case "Super":
+				return 21;
+			}
+		}
+		return -1;
 	}
 	
 	private static String getDateFromDoc(Document doc) {
@@ -439,7 +485,7 @@ public class Game {
 	
 	public String toString(String d) {
 		//0Game ID:%%:1week:%%:2year:%%:3date:%%:4time:%%:5roof:%%:6surface:%%:7weather:%%:8vegas:%%:9OU:%%:10visName:%%:11visScore:%%:12visSeasonRec:%%:13visCoachID:%%:14visQBID:%%:15[visRID as comma separated list NO SPACES]:%%:16[visDID as comma separated list]:%%:17homeName:%%:18homeScore:%%:19homeSeasonRec:%%:20homeCoachID:%%:21homeQBID:%%:22[homeRID as comma separated list]:%%:23[homeDID as comma separated list]
-		return ID + d + week + d + year + d + date + d + time + d + roof + d + surface + d + weather + d + vegas + d + OU + d + visName + d + visScore + d + visSeasonRec + d + visCoachID + d + visQBID + d + formatStringArr(visRID) + d + formatStringArr(visDID) + d + homeName + d + homeScore + d + homeSeasonRec + d + homeCoachID + d + homeQBID + d + formatStringArr(homeRID) + d + formatStringArr(homeDID);
+		return ID + d + week + d + year + d + date + d + time + d + roof + d + surface + d + weather + d + vegas + d + OU + d + visName + d + visScore + d + visSeasonRec + d + visCoachID + d + visQBID + d + formatStringArr(visRID) + d + formatStringArr(visDID) + d + homeName + d + homeScore + d + homeSeasonRec + d + homeCoachID + d + homeQBID + d + formatStringArr(homeRID) + d + formatStringArr(homeDID) + d + visKickerID + d + homeKickerID;
 		
 	}
 	
@@ -455,6 +501,10 @@ public class Game {
         return result.toString();
     }
 
+	
+	public void setWeek(int week) {
+		this.week = week;
+	}
 	
 	//you will make the build function here.
 	//you will pass in careerdata and gamestatline objects of the ids of the starters
