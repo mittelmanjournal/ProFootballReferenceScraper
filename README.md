@@ -1,1 +1,1 @@
-No longer building here. This was the means by which I collected data for my NFL AI Prediction model. You can see my final product for the model in this repo
+No longer building here. This was the means by which I collected data for my NFL AI Prediction model. You can see my final product for the model here: NFL-Neural-Network-Project https://github.com/mittelmanjournal/NFL-Neural-Network-Project (only 1000 of the 5200 rows I collected are provided)
