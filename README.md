@@ -1,1 +1,1 @@
-No longer building here. This was a precursor to the data collection process for the Football Predictor model, look in OTHER repo for where I 
+No longer building here. This was the means by which I collected data for my NFL AI Prediction model. You can see my final product for the model in this repo
